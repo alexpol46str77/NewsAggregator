@@ -1,0 +1,32 @@
+# Использовать официальный легковесный образ Python
+FROM docker.io/library/python:3.12-slim
+
+# Устанавливаем системные утилиты для корректной сборки пакетов
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Создаем рабочую директорию внутри контейнера
+WORKDIR /app
+
+# Копируем наши Python-файлы проекта внутрь контейнера
+COPY . ./
+
+# Устанавливаем все библиотеки Python (внутри контейнера PEP 668 не мешает!)
+RUN pip install --no-cache-dir \
+    sqlalchemy \
+    "psycopg[binary]" \
+    feedparser \
+    python-dotenv \
+    spacy \
+    streamlit \
+    pandas
+
+# Скачиваем новостную ИИ-модель русского языка для spaCy
+RUN python -m spacy download ru_core_news_sm
+
+# Открываем порт 8501 для нашего дашборда Streamlit
+EXPOSE 8501
+
+# По умолчанию контейнер будет держать запущенной нашу Streamlit-панель
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
